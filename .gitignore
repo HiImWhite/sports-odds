@@ -18,3 +18,12 @@ yarn-error.log*
 # OS / Editor Files
 .DS_Store
 .vscode/
+package-lock.json
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# DB Files
+.sql
+.toml
