@@ -6,10 +6,14 @@ export type Results = {
   timeText: string;
 };
 
-export type Odds = {
+export type MatchDataOdds = {
   matchId: number;
-  bookmaker: string;
-  oddsHome: string;
-  oddsDraw: string;
-  oddsAway: string;
+  bookmakers: {
+    name: string;
+    oddsValues: {
+      home: string;
+      draw: string;
+      away: string;
+    };
+  }[];
 };

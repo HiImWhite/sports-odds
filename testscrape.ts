@@ -8,7 +8,7 @@ async function main() {
     console.log(
       'Scrape complete! Got results and odds:',
       object.results,
-      object.odds
+      JSON.stringify(object.matchDataOdds, null, 2)
     );
   } catch (err) {
     console.error('Scrape failed:', err);

@@ -1,13 +1,23 @@
 import { chromium, Page } from 'playwright';
-import { Results, Odds } from './types';
+import { Results, MatchDataOdds } from './types';
 
 const results: Results[] = [];
-const odds: Odds[] = [];
+const matchDataOdds: MatchDataOdds[] = [];
 
 async function scrapeBookmakers(page: Page, matchId: number) {
   await page.waitForSelector('.oddsRowContent', { timeout: 10000 });
   const oddsRows = page.locator('.oddsRowContent');
   const rowCount = await oddsRows.count();
+
+  let matchEntry = matchDataOdds.find((entry) => entry.matchId === matchId);
+
+  if (!matchEntry) {
+    matchEntry = {
+      matchId: matchId,
+      bookmakers: [],
+    };
+    matchDataOdds.push(matchEntry);
+  }
 
   for (let i = 0; i < rowCount; i++) {
     const row = oddsRows.nth(i);
@@ -17,21 +27,30 @@ async function scrapeBookmakers(page: Page, matchId: number) {
       (await bookmakerElem.getAttribute('title'))?.trim() || '';
 
     const cells = row.locator('.cellWrapper');
-    const oddsHome = (await cells.nth(0).getAttribute('title')) || '';
-    const oddsDraw = (await cells.nth(1).getAttribute('title')) || '';
-    const oddsAway = (await cells.nth(2).getAttribute('title')) || '';
+    const oddsHome =
+      (await cells.nth(0).getAttribute('title'))?.split('»')[1]?.trim() ||
+      'Not available';
+    const oddsDraw =
+      (await cells.nth(1).getAttribute('title'))?.split('»')[1]?.trim() ||
+      'Not available';
+    const oddsAway =
+      (await cells.nth(2).getAttribute('title'))?.split('»')[1]?.trim() ||
+      'Not available';
 
     console.log(
       `MatchId: ${matchId} Bookmaker: ${bookmakerName} => H: ${oddsHome}, D: ${oddsDraw}, A: ${oddsAway}`
     );
-    odds.push({
-      matchId: matchId,
-      bookmaker: bookmakerName,
-      oddsHome: oddsHome,
-      oddsDraw: oddsDraw,
-      oddsAway: oddsAway,
+
+    matchEntry.bookmakers.push({
+      name: bookmakerName,
+      oddsValues: {
+        home: oddsHome,
+        draw: oddsDraw,
+        away: oddsAway,
+      },
     });
   }
+  return matchDataOdds;
 }
 
 export async function scrapeOdds() {
@@ -89,6 +108,17 @@ export async function scrapeOdds() {
           continue;
         }
 
+        const timeElem = child.locator('.event__time');
+        const timeText = ((await timeElem.textContent()) || '').trim();
+        if (timeText.includes('TWK')) {
+          continue;
+        }
+
+        const homeElem = child.locator('.event__homeParticipant');
+        const awayElem = child.locator('.event__awayParticipant');
+        const host = ((await homeElem.textContent()) || '').trim();
+        const guest = ((await awayElem.textContent()) || '').trim();
+
         const linkElem = child.locator('.eventRowLink');
         const href = await linkElem.getAttribute('href');
 
@@ -102,14 +132,6 @@ export async function scrapeOdds() {
           timeout: 10000,
         });
 
-        const timeElem = child.locator('.event__time');
-        const timeText = ((await timeElem.textContent()) || '').trim();
-
-        const homeElem = child.locator('.event__homeParticipant');
-        const awayElem = child.locator('.event__awayParticipant');
-        const host = ((await homeElem.textContent()) || '').trim();
-        const guest = ((await awayElem.textContent()) || '').trim();
-
         results.push({
           id: matchId,
           league: currentLeague,
@@ -121,7 +143,7 @@ export async function scrapeOdds() {
     }
 
     console.log(`Scraped ${results.length} matches`);
-    return { results, odds };
+    return { results, matchDataOdds };
   } catch (error) {
     console.error('Error scrapping Flashscore: ', error);
     throw error;
