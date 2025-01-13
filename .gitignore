@@ -18,12 +18,45 @@ yarn-error.log*
 # OS / Editor Files
 .DS_Store
 .vscode/
+.idea/
+
+# Dependency lock files
 package-lock.json
+yarn.lock
+
+# Test results and reports
 /test-results/
 /playwright-report/
 /blob-report/
+/coverage/
+*.html # Coverage reports
+*.xml # Test report files
 /playwright/.cache/
 
-# DB Files
-.sql
-.toml
+# Database-related files
+db/*.sql
+db/migrations/*
+db/prisma/migrations/*
+db/prisma/*.db
+db/prisma/.cache
+
+# Docker files (ignore only generated files)
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
+*.log
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# CI/CD-specific files
+.github/workflows/*.yaml
+.github/workflows/*.yml
+
+# Specific ignored examples/tests
+tests-examples/
+tests/e2e/example.spec.ts
+scraper/example.spec.ts

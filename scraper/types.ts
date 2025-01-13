@@ -1,5 +1,5 @@
-export type Results = {
-  id: number;
+export type MatchInfo = {
+  matchId: number;
   league: string;
   host: string;
   guest: string;

@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
+    "dev": "ts-node backend/app.ts",
+    "start": "npm run build && node dist/index.js",
     "format": "prettier --write \"src/**/*.{js,ts,json,md}\"",
-    "test:scraper": "ts-node testScrape.ts"
+    "test:scraper": "ts-node tests/testScrape.ts"
   },
   "repository": {
     "type": "git",
@@ -37,7 +38,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
-    "dayjs": "^1.11.13",
+    "fastify": "^5.2.1",
     "prisma": "^6.2.1"
   }
 }

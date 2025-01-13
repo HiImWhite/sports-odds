@@ -14,21 +14,21 @@ datasource db {
 }
 
 model Match {
-  id Int @id @default(autoincrement())
-  league String
-  host String
-  guest String
-  matchDate String
-  status String
-  timestamp DateTime @default(now())
+  id        Int         @id @default(autoincrement())
+  matchId   Int         @unique
+  league    String
+  host      String
+  guest     String
+  timeText  String
+  bookmakers Bookmaker[]
 }
 
-model Odds {
-  id Int @id @default(autoincrement())
-  matchId Int
-  bookmaker String
-  oddsHome Float
-  oddsDraw Float
-  oddsAway Float
-  timestamp DateTime @default(now())
+model Bookmaker {
+  id        Int    @id @default(autoincrement())
+  name      String
+  oddsHome  String
+  oddsDraw  String
+  oddsAway  String
+  matchId   Int
+  match     Match  @relation(fields: [matchId], references: [matchId])
 }

@@ -1,11 +1,10 @@
 import { chromium, Page } from 'playwright';
-import { Results, MatchDataOdds } from './types';
-
-const results: Results[] = [];
-const matchDataOdds: MatchDataOdds[] = [];
+import { MatchInfo, MatchDataOdds } from './types';
+import { saveMatchInfo, saveMatchOdds } from '../db/dbService';
 
 async function scrapeBookmakers(page: Page, matchId: number) {
   await page.waitForSelector('.oddsRowContent', { timeout: 10000 });
+  const matchDataOdds: MatchDataOdds[] = [];
   const oddsRows = page.locator('.oddsRowContent');
   const rowCount = await oddsRows.count();
 
@@ -27,15 +26,31 @@ async function scrapeBookmakers(page: Page, matchId: number) {
       (await bookmakerElem.getAttribute('title'))?.trim() || '';
 
     const cells = row.locator('.cellWrapper');
-    const oddsHome =
-      (await cells.nth(0).getAttribute('title'))?.split('»')[1]?.trim() ||
-      'Not available';
-    const oddsDraw =
-      (await cells.nth(1).getAttribute('title'))?.split('»')[1]?.trim() ||
-      'Not available';
-    const oddsAway =
-      (await cells.nth(2).getAttribute('title'))?.split('»')[1]?.trim() ||
-      'Not available';
+    const getOddsValue = async (cellLocator: ReturnType<typeof cells.nth>) => {
+      if (await cellLocator.locator('.oddsValueInner').isVisible()) {
+        const oddsValueInner = await cellLocator
+          .locator('.oddsValueInner')
+          .textContent();
+        return oddsValueInner?.trim() || 'Not available';
+      }
+
+      if (
+        await cellLocator
+          .locator('.oddsValue.odds-wrap.not-published.empty-published')
+          .isVisible()
+      ) {
+        const emptyPublished = await cellLocator
+          .locator('.oddsValue.odds-wrap.not-published.empty-published')
+          .textContent();
+        return emptyPublished?.trim() || 'Not available';
+      }
+
+      return 'Not available';
+    };
+
+    const oddsHome = await getOddsValue(cells.nth(0));
+    const oddsDraw = await getOddsValue(cells.nth(1));
+    const oddsAway = await getOddsValue(cells.nth(2));
 
     console.log(
       `MatchId: ${matchId} Bookmaker: ${bookmakerName} => H: ${oddsHome}, D: ${oddsDraw}, A: ${oddsAway}`
@@ -44,12 +59,13 @@ async function scrapeBookmakers(page: Page, matchId: number) {
     matchEntry.bookmakers.push({
       name: bookmakerName,
       oddsValues: {
-        home: oddsHome,
-        draw: oddsDraw,
-        away: oddsAway,
+        home: oddsHome.trim(),
+        draw: oddsDraw.trim(),
+        away: oddsAway.trim(),
       },
     });
   }
+  await saveMatchOdds(matchEntry);
   return matchDataOdds;
 }
 
@@ -119,6 +135,15 @@ export async function scrapeOdds() {
         const host = ((await homeElem.textContent()) || '').trim();
         const guest = ((await awayElem.textContent()) || '').trim();
 
+        const matchData: MatchInfo = {
+          matchId,
+          league: currentLeague,
+          host,
+          guest,
+          timeText,
+        };
+        await saveMatchInfo(matchData);
+
         const linkElem = child.locator('.eventRowLink');
         const href = await linkElem.getAttribute('href');
 
@@ -131,19 +156,9 @@ export async function scrapeOdds() {
         await page.waitForSelector('.event__match--scheduled', {
           timeout: 10000,
         });
-
-        results.push({
-          id: matchId,
-          league: currentLeague,
-          host,
-          guest,
-          timeText,
-        });
       }
     }
-
-    console.log(`Scraped ${results.length} matches`);
-    return { results, matchDataOdds };
+    console.log(`Scrapping ended succesfully.`);
   } catch (error) {
     console.error('Error scrapping Flashscore: ', error);
     throw error;
