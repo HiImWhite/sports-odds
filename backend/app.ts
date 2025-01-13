@@ -1,21 +1,9 @@
 import fastify from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import matchRoutes from './routes/matchRoutes';
 
 const app = fastify({ logger: true });
-const prisma = new PrismaClient();
 
-app.get('/leagues', async (_, reply) => {
-  try {
-    const leagues = await prisma.match.findMany({
-      select: { league: true },
-      distinct: ['league'],
-    });
-    return leagues;
-  } catch (error) {
-    app.log.error(error);
-    return reply.status(500).send({ error: 'Failed to fetch leagues' });
-  }
-});
+app.register(matchRoutes);
 
 const start = async () => {
   try {
