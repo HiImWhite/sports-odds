@@ -28,16 +28,55 @@ export async function saveMatchOdds(matchDataOdds: MatchDataOdds) {
   const { matchId, bookmakers } = matchDataOdds;
 
   for (const bookmaker of bookmakers) {
-    await prisma.bookmaker.create({
-      data: {
+    const existingOdds = await prisma.bookmaker.findFirst({
+      where: {
+        matchId,
         name: bookmaker.name,
-        oddsHome: bookmaker.oddsValues.home,
-        oddsDraw: bookmaker.oddsValues.draw,
-        oddsAway: bookmaker.oddsValues.away,
-        match: {
-          connect: { matchId },
-        },
       },
     });
+
+    const newOdds = {
+      home: bookmaker.oddsValues.home,
+      draw: bookmaker.oddsValues.draw,
+      away: bookmaker.oddsValues.away,
+    };
+
+    if (
+      !existingOdds ||
+      existingOdds.oddsHome !== newOdds.home ||
+      existingOdds.oddsDraw !== newOdds.draw ||
+      existingOdds.oddsAway !== newOdds.away
+    ) {
+      await prisma.bookmaker.upsert({
+        where: {
+          matchId_name: {
+            matchId,
+            name: bookmaker.name,
+          },
+        },
+        update: {
+          oddsHome: newOdds.home,
+          oddsDraw: newOdds.draw,
+          oddsAway: newOdds.away,
+        },
+        create: {
+          matchId,
+          name: bookmaker.name,
+          oddsHome: newOdds.home,
+          oddsDraw: newOdds.draw,
+          oddsAway: newOdds.away,
+        },
+      });
+
+      await prisma.oddsHistory.create({
+        data: {
+          matchId,
+          bookmaker: bookmaker.name,
+          oddsHome: newOdds.home,
+          oddsDraw: newOdds.draw,
+          oddsAway: newOdds.away,
+        },
+      });
+    }
   }
 }

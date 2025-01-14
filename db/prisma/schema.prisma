@@ -15,12 +15,13 @@ datasource db {
 
 model Match {
   id        Int         @id @default(autoincrement())
-  matchId   Int         @unique
+  matchId   String      @unique
   league    String
   host      String
   guest     String
   timeText  String
   bookmakers Bookmaker[]
+  oddsHistory OddsHistory[]
 }
 
 model Bookmaker {
@@ -29,6 +30,19 @@ model Bookmaker {
   oddsHome  String
   oddsDraw  String
   oddsAway  String
-  matchId   Int
-  match     Match  @relation(fields: [matchId], references: [matchId])
+  matchId   String
+  match     Match  @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
+
+  @@unique([matchId, name])
+}
+
+model OddsHistory {
+  id        Int      @id @default(autoincrement())
+  matchId   String
+  bookmaker String
+  oddsHome  String
+  oddsDraw  String
+  oddsAway  String
+  createdAt DateTime @default(now())
+  match     Match    @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
 }

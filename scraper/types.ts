@@ -1,5 +1,5 @@
 export type MatchInfo = {
-  matchId: number;
+  matchId: string;
   league: string;
   host: string;
   guest: string;
@@ -7,7 +7,7 @@ export type MatchInfo = {
 };
 
 export type MatchDataOdds = {
-  matchId: number;
+  matchId: string;
   bookmakers: {
     name: string;
     oddsValues: {

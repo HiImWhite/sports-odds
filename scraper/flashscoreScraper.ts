@@ -1,8 +1,9 @@
 import { chromium, Page } from 'playwright';
 import { MatchInfo, MatchDataOdds } from './types';
 import { saveMatchInfo, saveMatchOdds } from '../db/dbService';
+import { v4 as uuidv4 } from 'uuid';
 
-async function scrapeBookmakers(page: Page, matchId: number) {
+async function scrapeBookmakers(page: Page, matchId: string) {
   await page.waitForSelector('.oddsRowContent', { timeout: 10000 });
   const matchDataOdds: MatchDataOdds[] = [];
   const oddsRows = page.locator('.oddsRowContent');
@@ -72,7 +73,7 @@ async function scrapeBookmakers(page: Page, matchId: number) {
 export async function scrapeOdds() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  let matchId: number;
+  let matchId: string;
 
   try {
     await page.goto('https://www.flashscore.pl/');
@@ -95,7 +96,7 @@ export async function scrapeOdds() {
 
       for (let j = 0; j < elementCount; j++) {
         const child = elements.nth(j);
-        matchId = j;
+        matchId = uuidv4();
 
         const classAttr = (await child.getAttribute('class')) || '';
         if (classAttr.includes('wclLeagueHeader--noCheckBox')) {
