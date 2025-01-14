@@ -1,9 +1,11 @@
 import fastify from 'fastify';
 import matchRoutes from './routes/matchRoutes';
+import couponRoutes from './routes/couponRoutes';
 
 const app = fastify({ logger: true });
 
 app.register(matchRoutes);
+app.register(couponRoutes);
 
 const start = async () => {
   try {
