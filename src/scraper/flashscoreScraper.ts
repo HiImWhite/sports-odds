@@ -1,6 +1,6 @@
 import { chromium, Page } from 'playwright';
 import { MatchInfo, MatchDataOdds } from './types';
-import { saveMatchInfo, saveMatchOdds } from '../db/dbService';
+import { saveMatchInfo, saveMatchOdds } from '../../db/dbService';
 import { v4 as uuidv4 } from 'uuid';
 
 async function scrapeBookmakers(page: Page, matchId: string) {

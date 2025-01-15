@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -20,6 +21,7 @@ model Match {
   host      String
   guest     String
   timeText  String
+  date      String     
   bookmakers Bookmaker[]
   oddsHistory OddsHistory[]
 }
@@ -30,8 +32,9 @@ model Bookmaker {
   oddsHome  String
   oddsDraw  String
   oddsAway  String
+  date      String      
   matchId   String
-  match     Match  @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
+  match     Match  @relation(fields: [matchId], references: [matchId])
 
   @@unique([matchId, name])
 }
@@ -44,5 +47,5 @@ model OddsHistory {
   oddsDraw  String
   oddsAway  String
   createdAt DateTime @default(now())
-  match     Match    @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
+  match     Match    @relation(fields: [matchId], references: [matchId])
 }

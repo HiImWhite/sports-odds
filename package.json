@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node backend/app.ts",
-    "start": "npm run build && node dist/index.js",
+    "dev": "npx ts-node src/backend/app.ts",
+    "start": "npm run build && node dist/src/backend/app.js",
     "format": "prettier --write \"src/**/*.{js,ts,json,md}\"",
-    "test:scraper": "ts-node tests/testScrape.ts"
+    "scraper": "npx ts-node src/scraper/scrapperRunner.ts"
   },
   "repository": {
     "type": "git",
@@ -26,6 +26,7 @@
     "@eslint/js": "^9.18.0",
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.5",
+    "@types/node-cron": "^3.0.11",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "eslint": "^9.18.0",

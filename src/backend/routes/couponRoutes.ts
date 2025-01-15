@@ -4,14 +4,19 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export default async function couponRoutes(app: FastifyInstance) {
-  // Route to calculate odds of ako coupon for specific matches
   app.post('/ako-coupon', async (request, reply) => {
-    const { coupon } = request.body as {
+    // Route to calculate odds of ako coupon for specific matches
+    const { coupon, bookmakerName } = request.body as {
       coupon: { matchId: string; oddType: 'home' | 'draw' | 'away' }[];
+      bookmakerName: string;
     };
 
     if (!coupon || coupon.length === 0) {
       return reply.status(400).send({ error: 'Coupon data is required.' });
+    }
+
+    if (!bookmakerName) {
+      return reply.status(400).send({ error: 'Bookmaker name is required.' });
     }
 
     try {
@@ -26,13 +31,13 @@ export default async function couponRoutes(app: FastifyInstance) {
 
       for (const { matchId, oddType } of coupon) {
         const bookmakerOdds = await prisma.bookmaker.findFirst({
-          where: { matchId },
+          where: { matchId, name: bookmakerName },
         });
 
         if (!bookmakerOdds) {
-          return reply
-            .status(404)
-            .send({ error: `No odds found for matchId: ${matchId}` });
+          return reply.status(404).send({
+            error: `No odds found for matchId: ${matchId} with bookmaker: ${bookmakerName}`,
+          });
         }
 
         const oddsValue =

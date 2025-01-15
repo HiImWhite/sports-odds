@@ -1,8 +1,26 @@
 version: '3.9'
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    depends_on:
+      - db
+
+  scraper:
+    build:
+      context: .
+      dockerfile: src/scraper/Dockerfile
+    depends_on:
+      - backend
+    restart: on-failure
+    entrypoint: ['sh', '/app/start-scrapper.sh', 'backend', '3000']
+
   db:
     image: postgres:16-alpine
-    container_name: postgres16-alpine
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -10,7 +28,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
 
 volumes:
-  db-data:
+  db_data:

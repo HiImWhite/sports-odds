@@ -1,82 +1,64 @@
 import { PrismaClient } from '@prisma/client';
-import { MatchDataOdds, MatchInfo } from '../scraper/types';
+import { MatchDataOdds, MatchInfo } from '../src/scraper/types';
 
 const prisma = new PrismaClient();
 
-export async function cleanDatabase() {
-  try {
-    console.log('Cleaning database...');
-    await prisma.bookmaker.deleteMany({});
-    await prisma.match.deleteMany({});
-    console.log('Database cleaned successfully!');
-  } catch (error) {
-    console.error('Error cleaning database:', error);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
 export async function saveMatchInfo(matchInfo: MatchInfo) {
-  return prisma.match.upsert({
+  const today = new Date().toISOString().slice(0, 10); // Get current day in YYYY-MM-DD
+
+  await prisma.match.upsert({
     where: { matchId: matchInfo.matchId },
-    update: {},
-    create: matchInfo,
+    update: {
+      league: matchInfo.league,
+      host: matchInfo.host,
+      guest: matchInfo.guest,
+      timeText: matchInfo.timeText,
+      date: today,
+    },
+    create: {
+      ...matchInfo,
+      date: today,
+    },
   });
 }
 
 export async function saveMatchOdds(matchDataOdds: MatchDataOdds) {
-  const { matchId, bookmakers } = matchDataOdds;
+  const today = new Date().toISOString().slice(0, 10);
 
-  for (const bookmaker of bookmakers) {
-    const existingOdds = await prisma.bookmaker.findFirst({
+  for (const bookmaker of matchDataOdds.bookmakers) {
+    await prisma.bookmaker.upsert({
       where: {
-        matchId,
+        matchId_name: {
+          matchId: matchDataOdds.matchId,
+          name: bookmaker.name,
+        },
+      },
+      update: {
+        oddsHome: bookmaker.oddsValues.home,
+        oddsDraw: bookmaker.oddsValues.draw,
+        oddsAway: bookmaker.oddsValues.away,
+        date: today,
+      },
+      create: {
+        matchId: matchDataOdds.matchId,
         name: bookmaker.name,
+        oddsHome: bookmaker.oddsValues.home,
+        oddsDraw: bookmaker.oddsValues.draw,
+        oddsAway: bookmaker.oddsValues.away,
+        date: today,
       },
     });
 
-    const newOdds = {
-      home: bookmaker.oddsValues.home,
-      draw: bookmaker.oddsValues.draw,
-      away: bookmaker.oddsValues.away,
-    };
-
-    if (
-      !existingOdds ||
-      existingOdds.oddsHome !== newOdds.home ||
-      existingOdds.oddsDraw !== newOdds.draw ||
-      existingOdds.oddsAway !== newOdds.away
-    ) {
-      await prisma.bookmaker.upsert({
-        where: {
-          matchId_name: {
-            matchId,
-            name: bookmaker.name,
-          },
-        },
-        update: {
-          oddsHome: newOdds.home,
-          oddsDraw: newOdds.draw,
-          oddsAway: newOdds.away,
-        },
-        create: {
-          matchId,
-          name: bookmaker.name,
-          oddsHome: newOdds.home,
-          oddsDraw: newOdds.draw,
-          oddsAway: newOdds.away,
-        },
-      });
-
-      await prisma.oddsHistory.create({
-        data: {
-          matchId,
-          bookmaker: bookmaker.name,
-          oddsHome: newOdds.home,
-          oddsDraw: newOdds.draw,
-          oddsAway: newOdds.away,
-        },
-      });
-    }
+    // Save to OddsHistory table for tracking changes
+    await prisma.oddsHistory.create({
+      data: {
+        matchId: matchDataOdds.matchId,
+        bookmaker: bookmaker.name,
+        oddsHome: bookmaker.oddsValues.home,
+        oddsDraw: bookmaker.oddsValues.draw,
+        oddsAway: bookmaker.oddsValues.away,
+        createdAt: new Date(),
+      },
+    });
   }
 }
