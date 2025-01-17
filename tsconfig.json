@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "nodenext",
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2020",
     "noImplicitAny": true,
@@ -10,9 +11,11 @@
     "outDir": "dist",
     "baseUrl": ".",
     "skipLibCheck": true,
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["node", "jest"],
     "paths": {
       "*": ["node_modules/*", "src/types/*"]
     }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "utils/utils.ts"]
 }

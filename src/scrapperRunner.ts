@@ -13,6 +13,8 @@ async function main() {
   }
 }
 
+main();
+
 cron.schedule('*/30 * * * *', () => {
   console.log('Running scheduled scraper...');
   main();

@@ -1,7 +1,116 @@
 import { chromium, Page } from 'playwright';
 import { MatchInfo, MatchDataOdds } from './types';
 import { saveMatchInfo, saveMatchOdds } from '../../db/dbService';
-import { v4 as uuidv4 } from 'uuid';
+
+export async function scrapeOdds() {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  const url = 'https://www.flashscore.pl/';
+  let matchId: string;
+
+  try {
+    console.log(`Navigating to ${url}...`);
+    await page.goto(url);
+
+    const calendarButton = page.locator('.calendar__datepicker');
+    await calendarButton.waitFor();
+
+    const dateText = await calendarButton.textContent();
+    const date = dateText?.split(' ')[0].replace(/\//g, '-');
+    console.log(`Scraped date: ${date}`);
+
+    const soccerSection = page.locator('.sportName.soccer');
+    await soccerSection.first().waitFor();
+
+    const sectionCount = await soccerSection.count();
+    console.log('Found sections:', sectionCount);
+
+    for (let i = 0; i < sectionCount; i++) {
+      const container = soccerSection.nth(i);
+
+      const elements = container.locator(
+        '.wclLeagueHeader, .event__match--scheduled'
+      );
+      const elementCount = await elements.count();
+
+      let currentLeague = '';
+
+      for (let j = 0; j < elementCount; j++) {
+        const child = elements.nth(j);
+
+        const classAttr = (await child.getAttribute('class')) || '';
+        if (classAttr.includes('wclLeagueHeader--noCheckBox')) {
+          const showMoreButton = child.locator('.wclIcon__leagueShowMoreCont');
+          await showMoreButton.click();
+        }
+
+        const leagueHeader = child.locator('.event__title');
+        const leagueHeaderCount = await leagueHeader.count();
+        if (leagueHeaderCount) {
+          const leagueLink = leagueHeader.locator('.event__titleBox a');
+          const leagueName =
+            (await leagueLink.getAttribute('aria-label'))?.trim() || '';
+          currentLeague = leagueName;
+          console.log('League name:', currentLeague);
+          continue;
+        }
+
+        const betElem = child.locator('.liveBetWrapper');
+        if ((await betElem.count()) === 0) {
+          continue;
+        }
+
+        const scheduledBet = betElem.getByTestId('wcl-badgeLiveBet-scheduled');
+        if ((await scheduledBet.count()) === 0) {
+          continue;
+        }
+
+        const timeElem = child.locator('.event__time');
+        const time = ((await timeElem.textContent()) || '').trim();
+        if (time.includes('TWK')) {
+          continue;
+        }
+
+        const homeElem = child.locator('.event__homeParticipant');
+        const awayElem = child.locator('.event__awayParticipant');
+        const host = ((await homeElem.textContent()) || '').trim();
+        const guest = ((await awayElem.textContent()) || '').trim();
+        const cleanHostName = host.replace(/\s+/g, '');
+        const cleanGuestName = guest.replace(/\s+/g, '');
+
+        matchId = `${date}-${time}-${cleanHostName}-${cleanGuestName}`;
+
+        const matchData: MatchInfo = {
+          matchId,
+          league: currentLeague,
+          host,
+          guest,
+          time,
+        };
+        await saveMatchInfo(matchData);
+
+        const linkElem = child.locator('.eventRowLink');
+        const href = await linkElem.getAttribute('href');
+
+        await page.goto(href || '');
+        await page.waitForLoadState('domcontentloaded');
+
+        await scrapeBookmakers(page, matchId);
+
+        await page.goBack();
+        await page.waitForSelector('.event__match--scheduled', {
+          timeout: 10000,
+        });
+      }
+    }
+    console.log(`Scrapping ended succesfully.`);
+  } catch (error) {
+    console.error('Error scrapping Flashscore: ', error);
+    throw error;
+  } finally {
+    await browser.close();
+  }
+}
 
 async function scrapeBookmakers(page: Page, matchId: string) {
   await page.waitForSelector('.oddsRowContent', { timeout: 10000 });
@@ -68,102 +177,4 @@ async function scrapeBookmakers(page: Page, matchId: string) {
   }
   await saveMatchOdds(matchEntry);
   return matchDataOdds;
-}
-
-export async function scrapeOdds() {
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
-  let matchId: string;
-
-  try {
-    await page.goto('https://www.flashscore.pl/');
-
-    const soccerSection = page.locator('.sportName.soccer');
-    await soccerSection.first().waitFor();
-
-    const sectionCount = await soccerSection.count();
-    console.log('Found sections:', sectionCount);
-
-    for (let i = 0; i < sectionCount; i++) {
-      const container = soccerSection.nth(i);
-
-      const elements = container.locator(
-        '.wclLeagueHeader, .event__match--scheduled'
-      );
-      const elementCount = await elements.count();
-
-      let currentLeague = '';
-
-      for (let j = 0; j < elementCount; j++) {
-        const child = elements.nth(j);
-        matchId = uuidv4();
-
-        const classAttr = (await child.getAttribute('class')) || '';
-        if (classAttr.includes('wclLeagueHeader--noCheckBox')) {
-          const showMoreButton = child.locator('.wclIcon__leagueShowMoreCont');
-          await showMoreButton.click();
-        }
-
-        const leagueHeader = child.locator('.event__title');
-        const leagueHeaderCount = await leagueHeader.count();
-        if (leagueHeaderCount) {
-          const leagueLink = leagueHeader.locator('.event__titleBox a');
-          const leagueName =
-            (await leagueLink.getAttribute('aria-label'))?.trim() || '';
-          currentLeague = leagueName;
-          console.log('League name:', currentLeague);
-          continue;
-        }
-
-        const betElem = child.locator('.liveBetWrapper');
-        if ((await betElem.count()) === 0) {
-          continue;
-        }
-
-        const scheduledBet = betElem.getByTestId('wcl-badgeLiveBet-scheduled');
-        if ((await scheduledBet.count()) === 0) {
-          continue;
-        }
-
-        const timeElem = child.locator('.event__time');
-        const timeText = ((await timeElem.textContent()) || '').trim();
-        if (timeText.includes('TWK')) {
-          continue;
-        }
-
-        const homeElem = child.locator('.event__homeParticipant');
-        const awayElem = child.locator('.event__awayParticipant');
-        const host = ((await homeElem.textContent()) || '').trim();
-        const guest = ((await awayElem.textContent()) || '').trim();
-
-        const matchData: MatchInfo = {
-          matchId,
-          league: currentLeague,
-          host,
-          guest,
-          timeText,
-        };
-        await saveMatchInfo(matchData);
-
-        const linkElem = child.locator('.eventRowLink');
-        const href = await linkElem.getAttribute('href');
-
-        await page.goto(href || '');
-        await page.waitForLoadState('domcontentloaded');
-
-        await scrapeBookmakers(page, matchId);
-
-        await page.goBack();
-        await page.waitForSelector('.event__match--scheduled', {
-          timeout: 10000,
-        });
-      }
-    }
-    console.log(`Scrapping ended succesfully.`);
-  } catch (error) {
-    console.error('Error scrapping Flashscore: ', error);
-    throw error;
-  } finally {
-    await browser.close();
-  }
 }

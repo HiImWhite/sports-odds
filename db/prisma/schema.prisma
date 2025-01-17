@@ -20,7 +20,7 @@ model Match {
   league    String
   host      String
   guest     String
-  timeText  String
+  time      String
   date      String     
   bookmakers Bookmaker[]
   oddsHistory OddsHistory[]

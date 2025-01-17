@@ -1,10 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { MatchDataOdds, MatchInfo } from '../src/scraper/types';
+import getFormattedDay from '../utils/utils';
 
 const prisma = new PrismaClient();
 
 export async function saveMatchInfo(matchInfo: MatchInfo) {
-  const today = new Date().toISOString().slice(0, 10); // Get current day in YYYY-MM-DD
+  const today = getFormattedDay();
 
   await prisma.match.upsert({
     where: { matchId: matchInfo.matchId },
@@ -12,7 +13,7 @@ export async function saveMatchInfo(matchInfo: MatchInfo) {
       league: matchInfo.league,
       host: matchInfo.host,
       guest: matchInfo.guest,
-      timeText: matchInfo.timeText,
+      time: matchInfo.time,
       date: today,
     },
     create: {
@@ -23,7 +24,7 @@ export async function saveMatchInfo(matchInfo: MatchInfo) {
 }
 
 export async function saveMatchOdds(matchDataOdds: MatchDataOdds) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getFormattedDay();
 
   for (const bookmaker of matchDataOdds.bookmakers) {
     await prisma.bookmaker.upsert({

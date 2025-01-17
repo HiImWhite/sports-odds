@@ -3,7 +3,7 @@ export type MatchInfo = {
   league: string;
   host: string;
   guest: string;
-  timeText: string;
+  time: string;
 };
 
 export type MatchDataOdds = {

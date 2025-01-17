@@ -8,7 +8,9 @@
     "dev": "npx ts-node src/backend/app.ts",
     "start": "npm run build && node dist/src/backend/app.js",
     "format": "prettier --write \"src/**/*.{js,ts,json,md}\"",
-    "scraper": "npx ts-node src/scraper/scrapperRunner.ts"
+    "scraper": "npx ts-node src/scraper/scrapperRunner.ts",
+    "test:scraper": "npx playwright test",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -25,14 +27,17 @@
   "devDependencies": {
     "@eslint/js": "^9.18.0",
     "@playwright/test": "^1.49.1",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.10.5",
     "@types/node-cron": "^3.0.11",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "eslint": "^9.18.0",
     "globals": "^15.14.0",
+    "jest": "^29.7.0",
     "playwright": "^1.49.1",
     "prettier": "^3.4.2",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.19.1"
@@ -40,8 +45,8 @@
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "fastify": "^5.2.1",
+    "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
-    "prisma": "^6.2.1",
-    "uuid": "^11.0.5"
+    "prisma": "^6.2.1"
   }
 }
