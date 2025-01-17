@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import getFormattedDay from '../../../utils/utils';
 import NodeCache from 'node-cache';
+import { Bookmaker, MatchInfo, OddsHistory } from '../../../src/scraper/types';
 
 const prisma = new PrismaClient();
 const cache = new NodeCache({ stdTTL: 60 });
@@ -30,7 +31,7 @@ export default async function matchRoutes(app: FastifyInstance) {
         },
       });
 
-      const todayMatches = matches.filter((match) =>
+      const todayMatches = matches.filter((match: MatchInfo) =>
         match.matchId.includes(todayFormatted)
       );
 
@@ -113,23 +114,27 @@ export default async function matchRoutes(app: FastifyInstance) {
         league: match.league,
         host: match.host,
         guest: match.guest,
-        bookmakers: match.bookmakers.map((bookmaker) => ({
-          name: bookmaker.name,
-          odds: {
-            home: bookmaker.oddsHome,
-            draw: bookmaker.oddsDraw,
-            away: bookmaker.oddsAway,
-          },
-        })),
-        oddsHistory: match.oddsHistory.map((history) => ({
-          bookmaker: history.bookmaker,
-          odds: {
-            home: history.oddsHome,
-            draw: history.oddsDraw,
-            away: history.oddsAway,
-          },
-          timestamp: history.createdAt,
-        })),
+        bookmakers: match.bookmakers.map(
+          (bookmaker): Bookmaker => ({
+            name: bookmaker.name,
+            odds: {
+              home: bookmaker.oddsHome,
+              draw: bookmaker.oddsDraw,
+              away: bookmaker.oddsAway,
+            },
+          })
+        ),
+        oddsHistory: match.oddsHistory.map(
+          (history): OddsHistory => ({
+            bookmaker: history.bookmaker,
+            odds: {
+              home: history.oddsHome,
+              draw: history.oddsDraw,
+              away: history.oddsAway,
+            },
+            timestamp: history.createdAt,
+          })
+        ),
       };
 
       cache.set(matchId, response, 60);
