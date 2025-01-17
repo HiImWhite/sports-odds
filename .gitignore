@@ -52,10 +52,6 @@ docker-compose.override.yml
 # TypeScript build cache
 *.tsbuildinfo
 
-# CI/CD-specific files
-.github/workflows/*.yaml
-.github/workflows/*.yml
-
 # Specific ignored examples/tests
 tests-examples/
 tests/e2e/example.spec.ts

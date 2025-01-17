@@ -1,0 +1,94 @@
+name: Sports odds CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run DB Build and tests
+    runs-on: ubuntu-latest
+
+        services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        options: >-
+          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=db/prisma/schema.prisma
+
+      - name: Wait for PG DB
+        run: |
+          until pg_isready -h 127.0.0.1 -p 5432 -U ${{ secrets.POSTGRES_USER }}; do
+            echo "Waiting for Postgres...";
+            sleep 3;
+          done
+
+      - name: Apply Migrations
+        run: npx prisma migrate deploy --schema=db/prisma/schema.prisma
+
+      - name: Run Tests
+        run: npm test
+
+  docker:
+    name: Build and Test Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build Backend Docker Image
+        run: docker build -t sports-odds-backend -f src/backend/Dockerfile .
+
+      - name: Build Scraper Docker Image
+        run: docker build -t sports-odds-scraper -f src/scraper/Dockerfile .
+
+      - name: Run Backend Docker Container
+        run: |
+          docker run -d --name backend-container \
+            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            -p 3000:3000 \
+            sports-odds-backend
+
+      - name: Run Scraper Docker Container
+        run: |
+          docker run -d --name scraper-container \
+            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            sports-odds-scraper
+
+      - name: Verify Backend Health
+        run: |
+          curl --fail http://localhost:3000/matches || exit 1
+
+      - name: Verify Scraper Logs
+        run: docker logs scraper-container
+
+      - name: Clean Docker Containers
+        run: |
+          docker stop backend-container scraper-container
+          docker rm backend-container scraper-container
