@@ -40,20 +40,12 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Generate Prisma Client
-        env:
-          DATABASE_URL: postgresql://magicuser:magicpassword@localhost:5432/postgres-sport-odds
-        run: npx prisma generate --schema=db/prisma/schema.prisma
-
       - name: Wait for Postgres
         run: |
           until pg_isready -h 127.0.0.1 -p 5432 -U magicuser; do
             echo "Waiting for Postgres...";
             sleep 3;
           done
-
-      - name: Apply Migrations
-        run: npx prisma migrate deploy --schema=db/prisma/schema.prisma
 
       - name: Run Tests
         run: npm test
