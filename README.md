@@ -50,7 +50,9 @@ Records are accessible through the backend service with specific routes.
    DATABASE_URL=postgresql://magicuser:magicpassword@db:5432/postgres-sport-odds
    ```
 
-3. Build and start the application using Docker Compose:
+3. Ensure that script `start-scrapper.sh` in `./src/scraper/start-scrapper.sh` has LF end of line sequence.
+
+4. Build and start the application using Docker Compose:
    ```
    docker-compose up --build
    ```

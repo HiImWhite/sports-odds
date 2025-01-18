@@ -19,6 +19,9 @@ COPY . .
 # Compile TypeScript to JavaScript
 RUN npm run build
 
+# Generate Prisma Client
+RUN npx prisma generate --schema=./db/prisma/schema.prisma
+
 # Install netcat for shell
 RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
