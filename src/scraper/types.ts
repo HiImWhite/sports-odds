@@ -18,21 +18,19 @@ export interface MatchDataOdds {
   }[];
 }
 
+export interface Odds {
+  home: string;
+  draw: string;
+  away: string;
+}
+
 export interface Bookmaker {
   name: string;
-  odds: {
-    home: string;
-    draw: string;
-    away: string;
-  };
+  odds: Odds;
 }
 
 export interface OddsHistory {
   bookmaker: string;
-  odds: {
-    home: string;
-    draw: string;
-    away: string;
-  };
+  odds: Odds;
   timestamp: Date;
 }

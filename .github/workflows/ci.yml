@@ -1,4 +1,4 @@
-name: Sports odds CI
+name: Sports Odds CI
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: Run DB Build and tests
+    name: Run DB Build and Tests
     runs-on: ubuntu-latest
 
     services:
@@ -19,16 +19,19 @@ jobs:
         ports:
           - 5432:5432
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: magicuser
+          POSTGRES_PASSWORD: magicpassword
+          POSTGRES_DB: postgres-sport-odds
         options: >-
-          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
+          --health-cmd "pg_isready -U magicuser -d postgres-sport-odds"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -40,9 +43,9 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate --schema=db/prisma/schema.prisma
 
-      - name: Wait for PG DB
+      - name: Wait for Postgres
         run: |
-          until pg_isready -h 127.0.0.1 -p 5432 -U ${{ secrets.POSTGRES_USER }}; do
+          until pg_isready -h 127.0.0.1 -p 5432 -U magicuser; do
             echo "Waiting for Postgres...";
             sleep 3;
           done
@@ -58,6 +61,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
       - name: Build Backend Docker Image
         run: docker build -t sports-odds-backend -f src/backend/Dockerfile .
 
@@ -67,22 +73,19 @@ jobs:
       - name: Run Backend Docker Container
         run: |
           docker run -d --name backend-container \
-            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            -e DATABASE_URL=postgresql://magicuser:magicpassword@db:5432/postgres-sport-odds \
             -p 3000:3000 \
             sports-odds-backend
 
       - name: Run Scraper Docker Container
         run: |
           docker run -d --name scraper-container \
-            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            -e DATABASE_URL=postgresql://magicuser:magicpassword@db:5432/postgres-sport-odds \
             sports-odds-scraper
 
       - name: Verify Backend Health
         run: |
+          sleep 10
           curl --fail http://localhost:3000/matches || exit 1
 
       - name: Verify Scraper Logs
