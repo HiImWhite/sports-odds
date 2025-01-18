@@ -33,12 +33,6 @@ yarn.lock
 *.xml # Test report files
 /playwright/.cache/
 
-# Database-related files
-db/*.sql
-db/migrations/*
-db/prisma/migrations/*
-db/prisma/*.db
-db/prisma/.cache
 
 # Docker files (ignore only generated files)
 docker-compose.override.yml
