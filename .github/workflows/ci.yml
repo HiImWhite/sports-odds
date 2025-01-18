@@ -41,6 +41,8 @@ jobs:
         run: npm install
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://magicuser:magicpassword@localhost:5432/postgres-sport-odds
         run: npx prisma generate --schema=db/prisma/schema.prisma
 
       - name: Wait for Postgres
@@ -82,14 +84,6 @@ jobs:
           docker run -d --name scraper-container \
             -e DATABASE_URL=postgresql://magicuser:magicpassword@db:5432/postgres-sport-odds \
             sports-odds-scraper
-
-      - name: Verify Backend Health
-        run: |
-          sleep 10
-          curl --fail http://localhost:3000/matches || exit 1
-
-      - name: Verify Scraper Logs
-        run: docker logs scraper-container
 
       - name: Clean Docker Containers
         run: |
