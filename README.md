@@ -67,14 +67,24 @@ Records are accessible through the backend service with specific routes.
 
    - URL: `/matches`
    - Method: `GET`
-   - Query Parameters:
-     - `league` (optional): Filter matches by league.
    - Example:
      ```
-     curl "http://localhost:3000/matches?league=KOSTARYKA:%20Primera%20División"
+     curl "http://localhost:3000/matches"
      ```
 
-2. **Get Pre-Match Odds with History of Odds changes**:
+2. **Get Matches by League**:
+
+   - URL: /matches/league
+   - Method: `GET`
+   - Description: Fetch all matches in a specific league.
+   - Query Parameters:
+     league (required): Specify the league name to filter matches (Use `%20` as filler for space).
+   - Example:
+     ```
+     curl "http://localhost:3000/matches/league?league=KOSTARYKA:%20Primera%20División"
+     ```
+
+3. **Get Pre-Match Odds with History of Odds changes**:
 
    - URL: `/match/:matchId`
    - Method: `GET`
@@ -83,7 +93,7 @@ Records are accessible through the backend service with specific routes.
      curl "http://localhost:3000/match/17-01-20:00-Fleury91K-StEtienneK"
      ```
 
-3. **Generate AKO Coupon**:
+4. **Generate AKO Coupon**:
    - URL: `/ako-coupon`
    - Method: `POST`
    - Request Body:
@@ -129,8 +139,11 @@ Records are accessible through the backend service with specific routes.
 2. **Scraper Failing**:
 
    - Check if Playwright dependencies are installed:
+
      ```
      docker exec -it sports-odds-scraper-1 npx playwright install --with-deps
      ```
+
+   - Ensure that script `start-scrapper.sh` in `./src/scraper/start-scrapper.sh` has LF end of line sequence.
 
 ---
